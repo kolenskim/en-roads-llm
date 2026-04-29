@@ -1,6 +1,3 @@
-
-Purpose: Print enroads_core.py
-
 """En-ROADS Climate Scenario Tool - Single file for Google Colab."""
 import re, os, json, sys
 
