@@ -1,0 +1,6 @@
+
+Purpose: Print requirements.txt
+
+streamlit
+openai
+requests
