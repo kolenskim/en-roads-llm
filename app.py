@@ -1,3 +1,6 @@
+
+Purpose: Print final app.py for user to copy
+
 """Streamlit web UI for the En-ROADS climate scenario tool."""
 import os, sys
 import streamlit as st
@@ -11,16 +14,21 @@ st.set_page_config(page_title="En-ROADS Scenario Builder", page_icon="🌍", lay
 st.title("🌍 En-ROADS Climate Scenario Builder")
 st.caption("Translate natural language climate policies into [En-ROADS](https://en-roads.climateinteractive.org/) simulator scenarios")
 
+# --- Load API key from Streamlit secrets ---
+api_key = st.secrets.get("OPENAI_API_KEY", "") if hasattr(st, "secrets") else ""
+model = st.secrets.get("ENROADS_MODEL", "gpt-4o-mini") if hasattr(st, "secrets") else "gpt-4o-mini"
+agent_available = bool(api_key)
+
 # --- Sidebar ---
 with st.sidebar:
-    st.header("⚙️ AI Advisor")
-    use_agent = st.toggle("Enable AI Advisor", value=False, help="Requires an OpenAI-compatible API key")
-    if use_agent:
-        api_key = st.text_input("API Key", type="password", value=os.environ.get("OPENAI_API_KEY", ""))
-        model = st.text_input("Model", value=os.environ.get("ENROADS_MODEL", "gpt-4o-mini"))
-    st.divider()
     st.header("📋 Presets")
     preset = st.selectbox("Load a preset scenario", ["(none)"] + list(PRESETS.keys()))
+    if agent_available:
+        st.divider()
+        st.success("✅ AI Advisor is available")
+    else:
+        st.divider()
+        st.info("AI Advisor requires OPENAI_API_KEY in app secrets")
 
 # --- Tabs ---
 tab_direct, tab_agent = st.tabs(["📝 Direct Builder", "🤖 AI Advisor"])
@@ -61,10 +69,8 @@ with tab_direct:
 
 # === AI Advisor ===
 with tab_agent:
-    if not use_agent:
-        st.info("Enable the AI Advisor in the sidebar. Requires an OpenAI-compatible API key.")
-    elif not (use_agent and (api_key if use_agent else False)):
-        st.warning("Enter your API key in the sidebar.")
+    if not agent_available:
+        st.info("The AI Advisor requires an OpenAI API key. Add `OPENAI_API_KEY` to this app's Streamlit secrets to enable it.")
     else:
         os.environ["OPENAI_API_KEY"] = api_key
         os.environ["ENROADS_MODEL"] = model
