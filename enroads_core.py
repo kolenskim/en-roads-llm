@@ -184,26 +184,38 @@ Parameters: """ + ", ".join(f'{a["param"]}:{a["name"]}({a["min"]}-{a["max"]},def
 For energy sources, negative=subsidized, positive=taxed. Always provide the En-ROADS URL."""
 
 def execute_tool(name, args):
-    if name == "web_search":
-        results = web_search(args["query"])
-        return "\n".join(f"{i+1}. **{r['title']}**\n   {r['snippet']}\n   {r['url']}" for i,r in enumerate(results)) or "No results."
-    elif name == "read_webpage": return fetch_page(args["url"])
-    elif name == "build_scenario":
-        params = {k:float(v) for k,v in args["params"].items()}
-        url = build_url(params)
-        lines = [f"**{args.get('name','Scenario')}**\n"]
-        for a in ACTIONS:
-            if a["param"] in params:
-                v = params[a["param"]]
-                lines.append(f"  {a['name']}: {a['default']} → {v} {'↑' if v>a['default'] else '↓' if v<a['default'] else '='}")
-        lines.append(f"\n🔗 {url}")
-        return "\n".join(lines)
-    elif name == "parse_scenario":
-        changes = parse_scenario(args["description"])
-        if not changes: return "No actions recognized."
-        params = {c["param"]:c["value"] for c in changes}
-        return "\n".join(f"  {c['name']}: {c.get('default','?')} → {c['value']}" for c in changes) + f"\n\n🔗 {build_url(params)}"
-    return "Unknown tool"
+    try:
+        if name == "web_search":
+            results = web_search(args.get("query", ""))
+            return "\n".join(f"{i+1}. **{r['title']}**\n   {r['snippet']}\n   {r['url']}" for i,r in enumerate(results)) or "No results."
+        elif name == "read_webpage":
+            return fetch_page(args.get("url", ""))
+        elif name == "build_scenario":
+            p = args.get("params", args)
+            if isinstance(p, str):
+                p = json.loads(p)
+            params = {}
+            for k, v in p.items():
+                if k.startswith("p") and k[1:].isdigit():
+                    params[k] = float(v)
+            if not params:
+                return "Error: No valid parameters provided. Use format like {\"params\": {\"p39\": 100, \"p516\": 150}}"
+            url = build_url(params)
+            lines = [f"**{args.get('name', args.get('scenario_name', 'Scenario'))}**\n"]
+            for a in ACTIONS:
+                if a["param"] in params:
+                    v = params[a["param"]]
+                    lines.append(f"  {a['name']}: {a['default']} → {v} {'↑' if v>a['default'] else '↓' if v<a['default'] else '='}")
+            lines.append(f"\n🔗 {url}")
+            return "\n".join(lines)
+        elif name == "parse_scenario":
+            changes = parse_scenario(args.get("description", ""))
+            if not changes: return "No actions recognized."
+            params = {c["param"]:c["value"] for c in changes}
+            return "\n".join(f"  {c['name']}: {c.get('default','?')} → {c['value']}" for c in changes) + f"\n\n🔗 {build_url(params)}"
+        return "Unknown tool: " + name
+    except Exception as e:
+        return f"Tool error: {e}"
 
 def agent_chat(client, messages):
     from openai import OpenAI
