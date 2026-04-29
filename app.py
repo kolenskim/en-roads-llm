@@ -1,6 +1,3 @@
-
-Purpose: Print final app.py for user to copy
-
 """Streamlit web UI for the En-ROADS climate scenario tool."""
 import os, sys
 import streamlit as st
